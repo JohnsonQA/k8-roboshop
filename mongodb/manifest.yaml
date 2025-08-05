@@ -1,0 +1,31 @@
+#Mongodb is a DB for whivch we generally have to keep DB's seperately not as manifest files
+# Since here we are using we can go for deployment as pod is a subset of deployment
+# We service with cluster IP for POD to POD communication so that mongdb can interact with catalogue and user
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  labels:
+    component: mongodb
+    project: roboshop
+    tier: database
+spec:
+  replicas: 1
+  # These are labels of replica set used to create pod replicas. This should match pod labels
+  selector:
+    matchLabels:
+      component: mongodb
+      project: roboshop
+      tier: database
+  #Below is the POD definition
+  template:
+    metadata:
+      labels:
+        component: mongodb
+        project: roboshop
+        tier: database
+    spec:
+      containers:
+      - name: mongodb
+        image: johnson0309/mongodb:v1
