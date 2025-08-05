@@ -63,5 +63,5 @@ spec:
     tier: database
   ports:
   - protocol: TCP
-    port: 27017 #service port
-    targetPort: 27017 # target port which service forwards the traffic to 
+    port: 3306 #service port
+    targetPort: 3306 # target port which service forwards the traffic to 
