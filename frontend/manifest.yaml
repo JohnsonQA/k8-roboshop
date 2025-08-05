@@ -1,0 +1,144 @@
+#As we can use configuartions as configMap and secrets. we updated nginx.conf ip since we are running fronetend with 
+# non-root user. So we updated and using volumes to mount the configMap which are acting as files
+
+# We cant use envFrom as these are not varaibale (key value pairs) since these are files we should go for Volumes
+# Using VolumeMounts we pass the path of the files where ever we need the changes
+
+# Since its a frontend instead of Ip cluseter Service we go for Loadbalancer so that it will route the traffic prieorly 
+# by creating traget groups and forward the traffic accordingly
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: roboshop
+  labels:
+    component: frontend
+    project: roboshop
+    tier: web
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log notice;
+    pid /run/nginx.pid;
+
+    include /usr/share/nginx/modules/*.conf;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log  /var/log/nginx/access.log  main;
+
+        sendfile            on;
+        tcp_nopush          on;
+        keepalive_timeout   65;
+        types_hash_max_size 4096;
+
+        include             /etc/nginx/mime.types;
+        default_type        application/octet-stream;
+
+        include /etc/nginx/conf.d/*.conf;
+
+        server {
+            listen       8080;
+            listen       [::]:8080;
+            server_name  _;
+            root         /usr/share/nginx/html;
+
+            include /etc/nginx/default.d/*.conf;
+
+            error_page 404 /404.html;
+            location = /404.html {
+            }
+
+            error_page 500 502 503 504 /50x.html;
+            location = /50x.html {
+            }
+
+            location /images/ {
+              expires 5s;
+              root   /usr/share/nginx/html;
+              try_files $uri /images/placeholder.jpg;
+            }
+            location /api/catalogue/ { proxy_pass http://catalogue:8080/; }
+            location /api/user/ { proxy_pass http://user:8080/; }
+            location /api/cart/ { proxy_pass http://cart:8080/; }
+            location /api/shipping/ { proxy_pass http://shipping:8080/; }
+            location /api/payment/ { proxy_pass http://payment:8080/; }
+
+            location /health {
+              stub_status on;
+              access_log off;
+            }
+
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: roboshop
+  # deployment labels
+  labels:
+    component: frontend
+    project: roboshop
+    tier: web
+spec:
+  replicas: 1
+  # These are the labels replica set use to create pod replicas, this should match pod labels
+  selector:
+    matchLabels:
+      component: frontend
+      project: roboshop
+      tier: web
+  # This is pod definition
+  template:
+    metadata:
+      labels:
+        component: frontend
+        project: roboshop
+        tier: web
+    spec:
+      containers:
+      - name: frontend
+        image: johnson0309/frontend:v1
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+          readOnly: true
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: roboshop
+  labels:
+    component: frontend
+    project: roboshop
+    tier: web
+spec:
+  type: LoadBalancer
+  selector:
+    component: frontend
+    project: roboshop
+    tier: web
+  ports:
+  - protocol: TCP
+    port: 80 # service port
+    targetPort: 8080 # container port
