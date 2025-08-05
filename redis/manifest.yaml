@@ -41,6 +41,6 @@ spec:
     tier: database
   ports:
   - protocol: TCP
-    prot: 6379
+    port: 6379
     targetPort: 6379
     
