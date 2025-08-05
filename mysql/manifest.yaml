@@ -1,0 +1,67 @@
+#Mysql is a DB for whivch we generally have to keep DB's seperately not as manifest files
+# Since here we are using we can go for deployment as pod is a subset of deployment
+# We service with cluster IP for POD to POD communication so that mysql can interact with catalogue and user
+
+apiVersion: v1
+kind: Secret
+metadat:
+  name: mysql
+  namespace: roboshop
+  labels:
+    component: mysql
+    project: roboshop
+    tier: database
+type: Opaque
+data:
+  MYSQL_ROOT_PASSWORD: "Um9ib1Nob3BAMQ=="
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: roboshop
+  labels:
+    component: mysql
+    project: roboshop
+    tier: database
+spec:
+  replicas: 1
+  # These are labels of replica set used to create pod replicas. This should match pod labels
+  selector:
+    matchLabels:
+      component: mysql
+      project: roboshop
+      tier: database
+  #Below is the POD definition
+  template:
+    metadata:
+      labels:
+        component: mysql
+        project: roboshop
+        tier: database
+    spec:
+      containers:
+      - name: mysql
+        image: johnson0309/mysql:v1
+        envFrom:
+        - secretRef:
+            name: mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: roboshop
+  labels:
+    component: mysql
+    project: roboshop
+    tier: database
+spec:
+  selector:
+    component: mysql
+    project: roboshop
+    tier: database
+  ports:
+  - protocol: TCP
+    port: 27017 #service port
+    targetPort: 27017 # target port which service forwards the traffic to 
