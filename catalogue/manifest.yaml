@@ -2,7 +2,7 @@
 #Since it has some enviornments to be added we can go for config map which helps us to reterive the env values using configMap
 
 apiVersion: v1
-kind: configMap
+kind: ConfigMap
 metadata:
   name: catalogue
   namespace: roboshop
