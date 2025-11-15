@@ -36,6 +36,7 @@ kind: Service
 metadata:
   name: mongodb
   namespace: roboshop
+  #These labels should match the pod labels (template.metadata.labels)
   labels:
     component: mongodb
     project: roboshop
@@ -48,4 +49,4 @@ spec:
   ports:
   - protocol: TCP
     port: 27017 #service port
-    targetPort: 27017 # target port which service forwards the traffic to 
+    targetPort: 27017 # target port which service forwards the traffic to pod
